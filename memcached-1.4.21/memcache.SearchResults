@@ -1,0 +1,15 @@
+---- settings.detail_enabled Æ¥Åä (14 in 1 ÎÄ¼ş) ----
+Memcached.c:    settings.detail_enabled = 0;
+Memcached.c:    if (settings.detail_enabled) {
+Memcached.c:            settings.detail_enabled = 1;
+Memcached.c:            settings.detail_enabled = 0;
+Memcached.c:    if (settings.detail_enabled) {
+Memcached.c:    if (settings.detail_enabled) {
+Memcached.c:    if (settings.detail_enabled) {
+Memcached.c:        settings.detail_enabled = 1;
+Memcached.c:        settings.detail_enabled = 0;
+Memcached.c:                settings.detail_enabled ? "yes" : "no");
+Memcached.c:            if (settings.detail_enabled) {
+Memcached.c:    if (settings.detail_enabled) {
+Memcached.c:    if (settings.detail_enabled) {
+Memcached.c:            settings.detail_enabled = 1;
