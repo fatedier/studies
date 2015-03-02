@@ -1,0 +1,5 @@
+---- TRACKER_PROTO_CMD_STORAGE_SYNC_DEST_QUERY Æ¥Åä (4 in 3 ÎÄ¼þ) ----
+Tracker_client_thread.c (storage):	header.cmd = TRACKER_PROTO_CMD_STORAGE_SYNC_DEST_QUERY;
+Tracker_proto.h (tracker):#define TRACKER_PROTO_CMD_STORAGE_SYNC_DEST_QUERY   79 //dest storage query sync src storage server
+Tracker_service.c (tracker):			__LINE__, TRACKER_PROTO_CMD_STORAGE_SYNC_DEST_QUERY, \
+Tracker_service.c (tracker):		case TRACKER_PROTO_CMD_STORAGE_SYNC_DEST_QUERY:
