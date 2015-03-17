@@ -1,0 +1,89 @@
+.TH micro_httpd 8 "15 March 1999"
+.SH NAME
+micro_httpd - really small HTTP server
+.SH SYNOPSIS
+.B micro_httpd
+.I directory
+.SH DESCRIPTION
+.PP
+.I micro_httpd
+is a very small HTTP server.
+It runs from inetd, which means its performance is poor.
+But for low-traffic sites, it's quite adequate.
+It implements all the basic features of an HTTP server, including:
+.TP 3
+*
+Security against ".." filename snooping.
+.TP 3
+*
+The common MIME types.
+.TP 3
+*
+Trailing-slash redirection.
+.TP 3
+*
+index.html
+.TP 3
+*
+Directory listings.
+.PP
+All in 150 lines of code.
+.PP
+To install it, add a line like this to /etc/inetd.conf:
+.nf
+    micro_http  stream tcp nowait nobody  /usr/local/sbin/micro_httpd micro_httpd dir
+.fi
+Make sure the path to the executable is correct, and change "dir" to be
+the directory you want to serve.
+Then add a line like this to /etc/services:
+.nf
+    micro_http   port/tcp   #Micro HTTP server
+.fi
+Change "port" to the port number you want to use - 80, 8000, whatever.
+Then restart inetd by sending it a "HUP" signal, or rebooting.
+.PP
+On some systems, inetd has a maximum spawn rate - if you try to run
+inetd services faster than a certain number of times per minute, it
+assumed there's either a bug of an attack going on and it shuts down
+for a few minutes.
+If you run into this problem - look for syslog messages about too-rapid
+looping - you'll need to find out how to increase the limit.
+Unfortunately this varies from OS to OS.
+On FreeBSD, you add a "-R 10000" flag to inetd's initial command line.
+On some Linux systems, you can set the limit on a per-service basis
+in inetd.conf, by changing "nowait" to "nowait.10000".
+.PP
+Note that you can use micro_httpd to serve HTTPS, if you like, by running
+it from stunnel.
+First fetch and install stunnel - FreeBSD users can just go to
+/usr/ports/security/stunnel and do a "make cert ; make install".
+Then as root run:
+.nf
+    stunnel -p /usr/local/certs/stunnel.pem -d 443 \
+	-l /usr/local/sbin/micro_httpd -- \
+	micro_httpd dir
+.fi
+Make sure the paths to the certificate and executable are correct, and
+again don't forget to change "dir" to the directory you want to serve.
+.SH AUTHOR
+Copyright © 1999 by Jef Poskanzer <jef@mail.acme.com>. All rights reserved.
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
