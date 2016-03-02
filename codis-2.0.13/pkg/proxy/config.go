@@ -6,25 +6,25 @@ package proxy
 import (
 	"strings"
 
-	"github.com/c4pt0r/cfg"
 	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/c4pt0r/cfg"
 )
 
 type Config struct {
-	proxyId       string    // proxy的名称
-	productName   string    // 集群项目名称
-	zkAddr        string    // zk地址
-	passwd        string    // 访问redis的密码
+	proxyId       string // proxy的名称
+	productName   string // 集群项目名称
+	zkAddr        string // zk地址
+	passwd        string // 访问redis的密码
 	fact          ZkFactory
-	proto         string    // tcp or tcp4
+	proto         string // tcp or tcp4
 	provider      string
-	dashboardAddr string    // 访问dashboard的 [ip:port]
+	dashboardAddr string // 访问dashboard的 [ip:port]
 
-	pingPeriod       int    // seconds，定期向后端redis发送心跳
-	maxTimeout       int    // seconds，client会话超时时间
-	maxBufSize       int    // 每个client连接的缓冲区大小
-	maxPipeline      int    // pipeline最大值
-	zkSessionTimeout int    // zk连接超时时间，单位 ms
+	pingPeriod       int // seconds，定期向后端redis发送心跳
+	maxTimeout       int // seconds，client会话超时时间
+	maxBufSize       int // 每个client连接的缓冲区大小
+	maxPipeline      int // pipeline最大值
+	zkSessionTimeout int // zk连接超时时间，单位 ms
 }
 
 // 加载配置文件

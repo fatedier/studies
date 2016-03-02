@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-    // 不支持的命令列表
+	// 不支持的命令列表
 	for _, s := range []string{
 		"KEYS", "MOVE", "OBJECT", "RENAME", "RENAMENX", "SCAN", "BITOP", "MSETNX", "MIGRATE", "RESTORE",
 		"BLPOP", "BRPOP", "BRPOPLPUSH", "PSUBSCRIBE", "PUBLISH", "PUNSUBSCRIBE", "SUBSCRIBE", "RANDOMKEY",

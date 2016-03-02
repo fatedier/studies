@@ -17,13 +17,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docopt/docopt-go"
-	"github.com/ngaut/gostats"
 	"github.com/CodisLabs/codis/pkg/proxy"
 	"github.com/CodisLabs/codis/pkg/proxy/router"
 	"github.com/CodisLabs/codis/pkg/utils"
 	"github.com/CodisLabs/codis/pkg/utils/bytesize"
 	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/docopt/docopt-go"
+	"github.com/ngaut/gostats"
 )
 
 var (
@@ -119,7 +119,7 @@ func main() {
 		configFile = args["-c"].(string)
 	}
 
-    // 设置日志文件大小最大值
+	// 设置日志文件大小最大值
 	var maxFileFrag = 10000000
 	var maxFragSize int64 = bytesize.GB * 1
 	if s, ok := args["--log-filesize"].(string); ok && s != "" {
@@ -150,7 +150,7 @@ func main() {
 
 	cpus = runtime.NumCPU()
 	// set cpu
-    // 设置使用cpu核数
+	// 设置使用cpu核数
 	if args["--cpu"] != nil {
 		cpus, err = strconv.Atoi(args["--cpu"].(string))
 		if err != nil {
@@ -159,23 +159,23 @@ func main() {
 	}
 
 	// set addr
-    // 设置作为代理的绑定的地址
+	// 设置作为代理的绑定的地址
 	if args["--addr"] != nil {
 		addr = args["--addr"].(string)
 	}
 
 	// set http addr
-    // 设置提供http接口绑定的地址
+	// 设置提供http接口绑定的地址
 	if args["--http-addr"] != nil {
 		httpAddr = args["--http-addr"].(string)
 	}
 
-    // 可打开文件描述符数必须大于1024
+	// 可打开文件描述符数必须大于1024
 	checkUlimit(1024)
-    // 设置go使用的cpu数
+	// 设置go使用的cpu数
 	runtime.GOMAXPROCS(cpus)
 
-    // 可通过http请求动态调整日志级别
+	// 可通过http请求动态调整日志级别
 	http.HandleFunc("/setloglevel", handleSetLogLevel)
 	go func() {
 		err := http.ListenAndServe(httpAddr, nil)
@@ -183,22 +183,22 @@ func main() {
 	}()
 	log.Info("running on ", addr)
 
-    // 加载配置文件
+	// 加载配置文件
 	conf, err := proxy.LoadConf(configFile)
 	if err != nil {
 		log.PanicErrorf(err, "load config failed")
 	}
 
-    // 捕获 SIGTERM 信号
+	// 捕获 SIGTERM 信号
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, os.Kill)
 
-    // 建立一个新的proxy-server，会开启相关协程处理 redis-client 的请求，和后端 redis-server 建立连接
-    // 是主要的逻辑处理部分
+	// 建立一个新的proxy-server，会开启相关协程处理 redis-client 的请求，和后端 redis-server 建立连接
+	// 是主要的逻辑处理部分
 	s := proxy.New(addr, httpAddr, conf)
 	defer s.Close()
 
-    // stats包 提供了一个http接口获取相关信息  /debug/vars
+	// stats包 提供了一个http接口获取相关信息  /debug/vars
 	stats.PublishJSONFunc("router", func() string {
 		var m = make(map[string]interface{})
 		m["ops"] = router.OpCounts()
@@ -218,13 +218,13 @@ func main() {
 		s.Close()
 	}()
 
-    // 等待1秒后将自己的状态设置为online
+	// 等待1秒后将自己的状态设置为online
 	time.Sleep(time.Second)
 	if err := s.SetMyselfOnline(); err != nil {
 		log.WarnError(err, "mark myself online fail, you need mark online manually by dashboard")
 	}
 
-    // 等待 proxy_server 退出
+	// 等待 proxy_server 退出
 	s.Join()
 	log.Infof("proxy exit!! :(")
 }

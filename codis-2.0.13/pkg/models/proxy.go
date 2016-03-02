@@ -24,8 +24,8 @@ const (
 )
 
 type ProxyInfo struct {
-	Id           string `json:"id"`             // proxy名字，用户在配置文件中配置
-	Addr         string `json:"addr"`           // proxy服务地址，用于提供代理服务
+	Id           string `json:"id"`   // proxy名字，用户在配置文件中配置
+	Addr         string `json:"addr"` // proxy服务地址，用于提供代理服务
 	LastEvent    string `json:"last_event"`
 	LastEventTs  int64  `json:"last_event_ts"`
 	State        string `json:"state"`          // 当前状态
@@ -99,7 +99,6 @@ func CreateProxyInfo(zkConn zkhelper.Conn, productName string, pi *ProxyInfo) (s
 	return zkConn.Create(path.Join(dir, pi.Id), data, zk.FlagEphemeral, zkhelper.DefaultFileACLs())
 }
 
-
 func GetProxyFencePath(productName string) string {
 	return fmt.Sprintf("/zk/codis/db_%s/fence", productName)
 }
@@ -152,7 +151,7 @@ func GetFenceProxyMap(zkConn zkhelper.Conn, productName string) (map[string]bool
 var ErrUnknownProxyStatus = errors.New("unknown status, should be (online offline)")
 
 func SetProxyStatus(zkConn zkhelper.Conn, productName string, proxyName string, status string) error {
-    // 根据proxyName获取proxy的详细信息
+	// 根据proxyName获取proxy的详细信息
 	p, err := GetProxyInfo(zkConn, productName, proxyName)
 	if err != nil {
 		return errors.Trace(err)
@@ -163,7 +162,7 @@ func SetProxyStatus(zkConn zkhelper.Conn, productName string, proxyName string, 
 	}
 
 	// check slot status before setting proxy online
-    // 如果要设置proxy状态为online，需要检查所有slot的状态是否为online或者migrate
+	// 如果要设置proxy状态为online，需要检查所有slot的状态是否为online或者migrate
 	if status == PROXY_STATE_ONLINE {
 		slots, err := Slots(zkConn, productName)
 		if err != nil {
@@ -187,7 +186,7 @@ func SetProxyStatus(zkConn zkhelper.Conn, productName string, proxyName string, 
 		return errors.Trace(err)
 	}
 
-    // 如果是将proxy下线的操作，前面变更过proxy的状态了，这里监听在该节点，等待proxy退出将该节点删除
+	// 如果是将proxy下线的操作，前面变更过proxy的状态了，这里监听在该节点，等待proxy退出将该节点删除
 	if status == PROXY_STATE_MARK_OFFLINE {
 		// wait for the proxy down
 		for {

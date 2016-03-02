@@ -38,11 +38,11 @@ const (
 )
 
 type Action struct {
-	Type      ActionType  `json:"type"`         // 类型
-	Desc      string      `json:"desc"`         // 描述
-	Target    interface{} `json:"target"`       // 更新后的目标信息，例如 Slot、Proxy等
-	Ts        string      `json:"ts"`           // timestamp
-	Receivers []string    `json:"receivers"`    // proxyInfo结构json后的字符串，或者直接是 proxy_id
+	Type      ActionType  `json:"type"`      // 类型
+	Desc      string      `json:"desc"`      // 描述
+	Target    interface{} `json:"target"`    // 更新后的目标信息，例如 Slot、Proxy等
+	Ts        string      `json:"ts"`        // timestamp
+	Receivers []string    `json:"receivers"` // proxyInfo结构json后的字符串，或者直接是 proxy_id
 }
 
 // zk事件路径
@@ -104,7 +104,7 @@ func WaitForReceiverWithTimeout(zkConn zkhelper.Conn, productName string, action
 			log.Warnf("abnormal waiting time for receivers: %s %v", actionZkPath, proxyIds)
 		}
 		// get confirm ids
-        // proxy从actions里收到通知后会在 ActionResponse 里同样id的节点下创建以proxy_id命名的节点
+		// proxy从actions里收到通知后会在 ActionResponse 里同样id的节点下创建以proxy_id命名的节点
 		nodes, _, err := zkConn.Children(actionZkPath)
 		if err != nil {
 			return errors.Trace(err)
@@ -113,7 +113,7 @@ func WaitForReceiverWithTimeout(zkConn zkhelper.Conn, productName string, action
 			id := path.Base(node)
 			delete(proxyIds, id)
 		}
-        // 确认收到所有proxy的回复后退出
+		// 确认收到所有proxy的回复后退出
 		if len(proxyIds) == 0 {
 			return nil
 		}
@@ -122,7 +122,7 @@ func WaitForReceiverWithTimeout(zkConn zkhelper.Conn, productName string, action
 	}
 	log.Warn("proxies didn't responed: ", proxyIds)
 	// set offline proxies
-    // 将没有回复的proxies设置为offline
+	// 将没有回复的proxies设置为offline
 	for id, _ := range proxyIds {
 		log.Errorf("mark proxy %s to PROXY_STATE_MARK_OFFLINE", id)
 		if err := SetProxyStatus(zkConn, productName, id, PROXY_STATE_MARK_OFFLINE); err != nil {
@@ -252,14 +252,14 @@ func NewActionWithTimeout(zkConn zkhelper.Conn, productName string, actionType A
 	}
 
 	// set action receivers
-    // 获取所有处于在线状态的proxy节点信息
+	// 获取所有处于在线状态的proxy节点信息
 	proxies, err := ProxyList(zkConn, productName, func(p *ProxyInfo) bool {
 		return p.State == PROXY_STATE_ONLINE
 	})
 	if err != nil {
 		return errors.Trace(err)
 	}
-    // 确认处于 offline 状态的机器
+	// 确认处于 offline 状态的机器
 	if needConfirm {
 		// do fencing here, make sure 'offline' proxies are really offline
 		// now we only check whether the proxy lists are match
@@ -279,7 +279,7 @@ func NewActionWithTimeout(zkConn zkhelper.Conn, productName string, actionType A
 			return errors.Errorf("%s", errMsg)
 		}
 	}
-    // 将所有处于online状态的proxy加入receivers
+	// 将所有处于online状态的proxy加入receivers
 	for _, p := range proxies {
 		buf, err := json.Marshal(p)
 		if err != nil {
@@ -304,7 +304,7 @@ func NewActionWithTimeout(zkConn zkhelper.Conn, productName string, actionType A
 		return errors.Trace(err)
 	}
 
-    // 这里会在zk上创建一个顺序的目录，由于要兼容etcd，所以先创建一个文件，再删除文件后创建目录
+	// 这里会在zk上创建一个顺序的目录，由于要兼容etcd，所以先创建一个文件，再删除文件后创建目录
 	//create response node, etcd do not support create in order directory
 	//get path first
 	actionRespPath, err := zkConn.Create(respPath+"/", b, int32(zk.FlagSequence), zkhelper.DefaultFileACLs())
@@ -321,10 +321,10 @@ func NewActionWithTimeout(zkConn zkhelper.Conn, productName string, actionType A
 		return errors.Trace(err)
 	}
 
-    // 获取最后面的目录名
+	// 获取最后面的目录名
 	suffix := path.Base(actionRespPath)
 
-    // 创建通知节点
+	// 创建通知节点
 	// create action node
 	actionPath := path.Join(prefix, suffix)
 	_, err = zkConn.Create(actionPath, b, 0, zkhelper.DefaultFileACLs())
@@ -333,8 +333,8 @@ func NewActionWithTimeout(zkConn zkhelper.Conn, productName string, actionType A
 		return errors.Trace(err)
 	}
 
-    // 如果需要确认，需要等待所有proxy回复
-    // proxy从actions里收到通知后会在 ActionResponse 里同样id的节点下创建以proxy_id命名的节点
+	// 如果需要确认，需要等待所有proxy回复
+	// proxy从actions里收到通知后会在 ActionResponse 里同样id的节点下创建以proxy_id命名的节点
 	if needConfirm {
 		if err := WaitForReceiverWithTimeout(zkConn, productName, actionRespPath, proxies, timeoutInMs); err != nil {
 			return errors.Trace(err)
@@ -365,26 +365,26 @@ func ForceRemoveLock(zkConn zkhelper.Conn, productName string) error {
 
 // 删除fence节点下处于异常状态的节点信息
 func ForceRemoveDeadFence(zkConn zkhelper.Conn, productName string) error {
-    // 获取所有proxy信息
+	// 获取所有proxy信息
 	proxies, err := ProxyList(zkConn, productName, func(p *ProxyInfo) bool {
 		return p.State == PROXY_STATE_ONLINE
 	})
 	if err != nil {
 		return errors.Trace(err)
 	}
-    // 获取fence节点下的所有proxy的信息，value为true
+	// 获取fence节点下的所有proxy的信息，value为true
 	fenceProxies, err := GetFenceProxyMap(zkConn, productName)
 	if err != nil {
 		return errors.Trace(err)
 	}
 	// remove online proxies's fence
-    // 将状态正常的proxies移除
+	// 将状态正常的proxies移除
 	for _, proxy := range proxies {
 		delete(fenceProxies, proxy.Addr)
 	}
 
 	// delete dead fence in zookeeper
-    // 删除fence节点下的剩下的proxies节点信息
+	// 删除fence节点下的剩下的proxies节点信息
 	path := GetProxyFencePath(productName)
 	for remainFence, _ := range fenceProxies {
 		fencePath := filepath.Join(path, remainFence)

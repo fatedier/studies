@@ -18,12 +18,12 @@ const MaxSlotNum = models.DEFAULT_SLOT_NUM
 type Router struct {
 	mu sync.Mutex
 
-	auth string                 // 访问redis密码
-	pool map[string]*SharedBackendConn  // 访问redis的共享连接池
+	auth string                        // 访问redis密码
+	pool map[string]*SharedBackendConn // 访问redis的共享连接池
 
-	slots [MaxSlotNum]*Slot     // slot信息
+	slots [MaxSlotNum]*Slot // slot信息
 
-	closed bool                 // 结束标志
+	closed bool // 结束标志
 }
 
 func New() *Router {
@@ -144,13 +144,13 @@ func (s *Router) fillSlot(i int, addr, from string, lock bool) {
 	slot := s.slots[i]
 	slot.blockAndWait()
 
-    // 将原来的连接放回连接池
+	// 将原来的连接放回连接池
 	s.putBackendConn(slot.backend.bc)
 	s.putBackendConn(slot.migrate.bc)
-    // 清空原先的数据
+	// 清空原先的数据
 	slot.reset()
 
-    // 创建与此slot所在redis-server的连接，可以从连接池中获取
+	// 创建与此slot所在redis-server的连接，可以从连接池中获取
 	if len(addr) != 0 {
 		xx := strings.Split(addr, ":")
 		if len(xx) >= 1 {
@@ -162,7 +162,7 @@ func (s *Router) fillSlot(i int, addr, from string, lock bool) {
 		slot.backend.addr = addr
 		slot.backend.bc = s.getBackendConn(addr)
 	}
-    // 如果正处于迁移中的状态，需要记录下与原来所在redis-server的连接
+	// 如果正处于迁移中的状态，需要记录下与原来所在redis-server的连接
 	if len(from) != 0 {
 		slot.migrate.from = from
 		slot.migrate.bc = s.getBackendConn(from)

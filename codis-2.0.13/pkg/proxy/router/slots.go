@@ -16,14 +16,14 @@ import (
 type Slot struct {
 	id int
 
-    // slot所在redis-server的连接
+	// slot所在redis-server的连接
 	backend struct {
 		addr string
 		host []byte
 		port []byte
 		bc   *SharedBackendConn
 	}
-    // slot迁移时，原redis-server的连接
+	// slot迁移时，原redis-server的连接
 	migrate struct {
 		from string
 		bc   *SharedBackendConn
@@ -64,13 +64,13 @@ func (s *Slot) reset() {
 // 对redis-client的请求进行转发
 func (s *Slot) forward(r *Request, key []byte) error {
 	s.lock.RLock()
-    // 执行redis命令前的准备工作，检查和后端redis连接是否存在，检查slot是否处于迁移状态中，如果是，强制迁移指定key到新的redis-server
+	// 执行redis命令前的准备工作，检查和后端redis连接是否存在，检查slot是否处于迁移状态中，如果是，强制迁移指定key到新的redis-server
 	bc, err := s.prepare(r, key)
 	s.lock.RUnlock()
 	if err != nil {
 		return err
 	} else {
-        // 转发redis命令
+		// 转发redis命令
 		bc.PushBack(r)
 		return nil
 	}
@@ -89,7 +89,7 @@ func (s *Slot) prepare(r *Request, key []byte) (*SharedBackendConn, error) {
 			s.id, s.migrate.from, s.backend.addr, key, err)
 		return nil, err
 	} else {
-        // 操作可能涉及多个slot，需要等待所有slot完成操作
+		// 操作可能涉及多个slot，需要等待所有slot完成操作
 		r.slot = &s.wait
 		r.slot.Add(1)
 		return s.backend.bc, nil
@@ -103,7 +103,7 @@ func (s *Slot) slotsmgrt(r *Request, key []byte) error {
 	if len(key) == 0 || s.migrate.bc == nil {
 		return nil
 	}
-    // 向原来的redis-server发送 SLOTSMGRTTAGONE 命令
+	// 向原来的redis-server发送 SLOTSMGRTTAGONE 命令
 	m := &Request{
 		Resp: redis.NewArray([]*redis.Resp{
 			redis.NewBulkBytes([]byte("SLOTSMGRTTAGONE")),
@@ -116,7 +116,7 @@ func (s *Slot) slotsmgrt(r *Request, key []byte) error {
 	}
 	s.migrate.bc.PushBack(m)
 
-    // 等待请求完成
+	// 等待请求完成
 	m.Wait.Wait()
 
 	resp, err := m.Response.Resp, m.Response.Err

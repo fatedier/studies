@@ -16,18 +16,18 @@ import (
 )
 
 type Env interface {
-	ProductName() string                    
-	Password() string                       
-	DashboardAddr() string                  
-	NewZkConn() (zkhelper.Conn, error)    // 创建新的zk连接
+	ProductName() string
+	Password() string
+	DashboardAddr() string
+	NewZkConn() (zkhelper.Conn, error) // 创建新的zk连接
 }
 
 type CodisEnv struct {
-	zkAddr        string        // zk或者etcd连接地址
-	passwd        string        // 连接后端redis的密码
-	dashboardAddr string        // dashboard的地址
-	productName   string        // 集群的名称
-	provider      string        // zookeeper or etcd
+	zkAddr        string // zk或者etcd连接地址
+	passwd        string // 连接后端redis的密码
+	dashboardAddr string // dashboard的地址
+	productName   string // 集群的名称
+	provider      string // zookeeper or etcd
 }
 
 func LoadCodisEnv(cfg *cfg.Cfg) Env {
@@ -35,33 +35,33 @@ func LoadCodisEnv(cfg *cfg.Cfg) Env {
 		log.Panicf("config is nil")
 	}
 
-    // 集群名称
+	// 集群名称
 	productName, err := cfg.ReadString("product", "test")
 	if err != nil {
 		log.PanicErrorf(err, "config: 'product' not found")
 	}
 
-    // zk地址
+	// zk地址
 	zkAddr, err := cfg.ReadString("zk", "localhost:2181")
 	if err != nil {
 		log.PanicErrorf(err, "config: 'zk' not found")
 	}
 
-    // 取本机hostname
+	// 取本机hostname
 	hostname, _ := os.Hostname()
-    // dashboard绑定地址，如果没有，默认为hostname:18087
+	// dashboard绑定地址，如果没有，默认为hostname:18087
 	dashboardAddr, err := cfg.ReadString("dashboard_addr", hostname+":18087")
 	if err != nil {
 		log.PanicErrorf(err, "config: 'dashboard_addr' not found")
 	}
 
-    // 启用zk还是etcd
+	// 启用zk还是etcd
 	provider, err := cfg.ReadString("coordinator", "zookeeper")
 	if err != nil {
 		log.PanicErrorf(err, "config: 'coordinator' not found")
 	}
 
-    // 连接redis的密码
+	// 连接redis的密码
 	passwd, _ := cfg.ReadString("password", "")
 
 	return &CodisEnv{
@@ -88,10 +88,10 @@ func (e *CodisEnv) DashboardAddr() string {
 func (e *CodisEnv) NewZkConn() (zkhelper.Conn, error) {
 	switch e.provider {
 	case "zookeeper":
-        // 这里可以考虑从配置文件读取
-        // modify by fatedier
+		// 这里可以考虑从配置文件读取
+		// modify by fatedier
 		return zkhelper.ConnectToZk(e.zkAddr, 60000)
-        // end
+		// end
 	case "etcd":
 		addr := strings.TrimSpace(e.zkAddr)
 		if !strings.HasPrefix(addr, "http://") {

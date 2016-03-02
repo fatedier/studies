@@ -25,19 +25,19 @@ import (
 
 // proxy-server
 type Server struct {
-	conf   *Config              // 配置信息
-	topo   *Topology            // 集群拓扑信息管理对象
-	info   models.ProxyInfo     // proxy信息
-	groups map[int]int          // group信息
+	conf   *Config          // 配置信息
+	topo   *Topology        // 集群拓扑信息管理对象
+	info   models.ProxyInfo // proxy信息
+	groups map[int]int      // group信息
 
-	lastActionSeq int           // 最近一次通知的序号
+	lastActionSeq int // 最近一次通知的序号
 
-	evtbus   chan interface{}   // 用于监听zk节点，返回节点变更的事件
-	router   *router.Router     // 用于访问后端redis的路由
+	evtbus   chan interface{} // 用于监听zk节点，返回节点变更的事件
+	router   *router.Router   // 用于访问后端redis的路由
 	listener net.Listener
 
-	kill chan interface{}       // 通过此通道通知close消息
-	wait sync.WaitGroup         // 用于等待proxy结束
+	kill chan interface{} // 通过此通道通知close消息
+	wait sync.WaitGroup   // 用于等待proxy结束
 	stop sync.Once
 }
 
@@ -48,8 +48,8 @@ func New(addr string, debugVarAddr string, conf *Config) *Server {
 	proxyHost := strings.Split(addr, ":")[0]
 	debugHost := strings.Split(debugVarAddr, ":")[0]
 
-    // 如果绑定的地址是 0.0.0.0 或者 127.0.0.1 就会采用 hostname
-    // 因为这个地址是要存储到 zk 上，然后dashboard从zk上获取并访问
+	// 如果绑定的地址是 0.0.0.0 或者 127.0.0.1 就会采用 hostname
+	// 因为这个地址是要存储到 zk 上，然后dashboard从zk上获取并访问
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.PanicErrorf(err, "get host name failed")
@@ -63,9 +63,9 @@ func New(addr string, debugVarAddr string, conf *Config) *Server {
 
 	s := &Server{conf: conf, lastActionSeq: -1, groups: make(map[int]int)}
 
-    // 创建集群拓扑信息管理对象
+	// 创建集群拓扑信息管理对象
 	s.topo = NewTopo(conf.productName, conf.zkAddr, conf.fact, conf.provider, conf.zkSessionTimeout)
-    // 初始化proxy信息
+	// 初始化proxy信息
 	s.info.Id = conf.proxyId
 	s.info.State = models.PROXY_STATE_OFFLINE
 	s.info.Addr = proxyHost + ":" + strings.Split(addr, ":")[1]
@@ -76,23 +76,23 @@ func New(addr string, debugVarAddr string, conf *Config) *Server {
 
 	log.Infof("proxy info = %+v", s.info)
 
-    // 监听代理端口
+	// 监听代理端口
 	if l, err := net.Listen(conf.proto, addr); err != nil {
 		log.PanicErrorf(err, "open listener failed")
 	} else {
 		s.listener = l
 	}
-    // 创建一个访问后端redis的路由
+	// 创建一个访问后端redis的路由
 	s.router = router.NewWithAuth(conf.passwd)
 	s.evtbus = make(chan interface{}, 1024)
 
-    // 在zk上注册自身的信息，包括proxy和fence节点
+	// 在zk上注册自身的信息，包括proxy和fence节点
 	s.register()
 
 	s.wait.Add(1)
 	go func() {
 		defer s.wait.Done()
-        // 启动proxy的主要处理函数
+		// 启动proxy的主要处理函数
 		s.serve()
 	}()
 	return s
@@ -121,32 +121,31 @@ func (s *Server) SetMyselfOnline() error {
 func (s *Server) serve() {
 	defer s.close()
 
-    // 每隔3s钟检查一次zk中此proxy的信息，直到状态变为online后返回true，或者接到 mark_offline 或者kill信号，返回false
-    // 阻塞直到处于online状态返回true后正常工作
+	// 每隔3s钟检查一次zk中此proxy的信息，直到状态变为online后返回true，或者接到 mark_offline 或者kill信号，返回false
+	// 阻塞直到处于online状态返回true后正常工作
 	if !s.waitOnline() {
 		return
 	}
 
-    // 重新监听所有 proxy 节点的变更
+	// 重新监听所有 proxy 节点的变更
 	s.rewatchNodes()
 
-    // 填充指定slot的信息，建立与所在redis-server的连接
+	// 填充指定slot的信息，建立与所在redis-server的连接
 	for i := 0; i < router.MaxSlotNum; i++ {
 		s.fillSlot(i)
 	}
 	log.Info("proxy is serving")
 	go func() {
 		defer s.close()
-        // 处理 redis 客户端的连接
+		// 处理 redis 客户端的连接
 		s.handleConns()
 	}()
 
-    
-    // 循环等待事件触发
-    // 这里做三件事
-    // 1. 通过 s.kill 接收停止信号，设置 mark_offline状态
-    // 2. 检测到zk上有状态变更，进行相应的处理
-    // 3. 每隔指定间隔时间，向后端的redis-server发送心跳包
+	// 循环等待事件触发
+	// 这里做三件事
+	// 1. 通过 s.kill 接收停止信号，设置 mark_offline状态
+	// 2. 检测到zk上有状态变更，进行相应的处理
+	// 3. 每隔指定间隔时间，向后端的redis-server发送心跳包
 	s.loopEvents()
 }
 
@@ -159,18 +158,18 @@ func (s *Server) handleConns() {
 	go func() {
 		for c := range ch {
 			x := router.NewSessionSize(c, s.conf.passwd, s.conf.maxBufSize, s.conf.maxTimeout)
-            // 针对一个redis-client连接的处理函数，会将请求交由 s.router 转发给后端 redis-server
+			// 针对一个redis-client连接的处理函数，会将请求交由 s.router 转发给后端 redis-server
 			go x.Serve(s.router, s.conf.maxPipeline)
 		}
 	}()
 
-    // 循环处理 redis 客户端的连接，通过 ch 通道交给上面的 x.Server 函数处理
+	// 循环处理 redis 客户端的连接，通过 ch 通道交给上面的 x.Server 函数处理
 	for {
 		c, err := s.listener.Accept()
 		if err != nil {
 			if ne, ok := err.(net.Error); ok && ne.Temporary() {
 				log.WarnErrorf(err, "[%p] proxy accept new connection failed, get temporary error", s)
-				time.Sleep(time.Millisecond*10)
+				time.Sleep(time.Millisecond * 10)
 				continue
 			}
 			log.WarnErrorf(err, "[%p] proxy accept new connection failed, get non-temporary error, must shutdown", s)
@@ -196,10 +195,10 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) close() {
-    // 确保只执行一次
+	// 确保只执行一次
 	s.stop.Do(func() {
 		s.listener.Close()
-        // 关闭和redis之间的路由
+		// 关闭和redis之间的路由
 		if s.router != nil {
 			s.router.Close()
 		}
@@ -209,7 +208,7 @@ func (s *Server) close() {
 
 // 重新监听该proxy节点，关注自身的状态变更
 func (s *Server) rewatchProxy() {
-    // 监听zk上此proxy节点
+	// 监听zk上此proxy节点
 	_, err := s.topo.WatchNode(path.Join(models.GetProxyPath(s.topo.ProductName), s.info.Id), s.evtbus)
 	if err != nil {
 		log.PanicErrorf(err, "watch node failed")
@@ -227,11 +226,11 @@ func (s *Server) rewatchNodes() []string {
 
 // 在zk上注册自身的信息，包括proxy和fence节点
 func (s *Server) register() {
-    // 在zk上创建自身的proxy信息
+	// 在zk上创建自身的proxy信息
 	if _, err := s.topo.CreateProxyInfo(&s.info); err != nil {
 		log.PanicErrorf(err, "create proxy node failed")
 	}
-    // 在fence节点上创建proxy信息
+	// 在fence节点上创建proxy信息
 	if _, err := s.topo.CreateProxyFenceNode(&s.info); err != nil && err != zk.ErrNodeExists {
 		log.PanicErrorf(err, "create fence node failed")
 	}
@@ -243,7 +242,7 @@ func (s *Server) register() {
 
 // 将proxy状态修改为 offline，会删除zk上此proxy相关的节点
 func (s *Server) markOffline() {
-    // 删除zk上proxy相关的节点
+	// 删除zk上proxy相关的节点
 	s.topo.Close(s.info.Id)
 	s.info.State = models.PROXY_STATE_MARK_OFFLINE
 }
@@ -251,30 +250,30 @@ func (s *Server) markOffline() {
 // 每隔3s钟检查一次zk中此proxy的信息，直到状态变为online后返回true，或者接到 mark_offline 或者kill信号，返回false
 func (s *Server) waitOnline() bool {
 	for {
-        // 获取zk上存储的自身的信息
+		// 获取zk上存储的自身的信息
 		info, err := s.topo.GetProxyInfo(s.info.Id)
 		if err != nil {
 			log.PanicErrorf(err, "get proxy info failed: %s", s.info.Id)
 		}
 
-        // 状态有3种，online offline mark_offline
+		// 状态有3种，online offline mark_offline
 		switch info.State {
-        // mark_offline，接到了被下线的事件
+		// mark_offline，接到了被下线的事件
 		case models.PROXY_STATE_MARK_OFFLINE:
 			log.Infof("mark offline, proxy got offline event: %s", s.info.Id)
-            // 将proxy状态修改为 offline，会删除zk上此proxy相关的节点
+			// 将proxy状态修改为 offline，会删除zk上此proxy相关的节点
 			s.markOffline()
 			return false
-        // 处于online，返回true
+			// 处于online，返回true
 		case models.PROXY_STATE_ONLINE:
 			s.info.State = info.State
 			log.Infof("we are online: %s", s.info.Id)
-            // 重新监听此proxy节点
+			// 重新监听此proxy节点
 			s.rewatchProxy()
 			return true
 		}
 		select {
-        // 结束信号，结束此循环，退出
+		// 结束信号，结束此循环，退出
 		case <-s.kill:
 			log.Infof("mark offline, proxy is killed: %s", s.info.Id)
 			s.markOffline()
@@ -296,14 +295,14 @@ func needResponse(receivers []string, self models.ProxyInfo) bool {
 	var info models.ProxyInfo
 	for _, v := range receivers {
 		err := json.Unmarshal([]byte(v), &info)
-        // receivers有可能不是一个 json字符串格式而只是proxy_id
+		// receivers有可能不是一个 json字符串格式而只是proxy_id
 		if err != nil {
 			if v == self.Id {
 				return true
 			}
 			return false
 		}
-        // 检查是否是同一个proxy
+		// 检查是否是同一个proxy
 		if info.Id == self.Id && info.Pid == self.Pid && info.StartAt == self.StartAt {
 			return true
 		}
@@ -336,14 +335,14 @@ func (s *Server) resetSlot(i int) {
 // 填充指定slot的信息，建立与所在redis-server的连接
 // 之后关于redis的操作会根据key映射到slot，再从slot中找到与其所在redis-server的连接
 func (s *Server) fillSlot(i int) {
-    // 获取指定id的slot信息，并且获取所在group的信息
+	// 获取指定id的slot信息，并且获取所在group的信息
 	slotInfo, slotGroup, err := s.topo.GetSlotByIndex(i)
 	if err != nil {
 		log.PanicErrorf(err, "get slot by index failed", i)
 	}
 
 	var from string
-    // 获取一个group中处于master身份的redis-server的地址
+	// 获取一个group中处于master身份的redis-server的地址
 	var addr = groupMaster(*slotGroup)
 	if slotInfo.State.Status == models.SLOT_STATUS_MIGRATE {
 		fromGroup, err := s.topo.GetGroup(slotInfo.State.MigrateStatus.From)
@@ -356,9 +355,9 @@ func (s *Server) fillSlot(i int) {
 		}
 	}
 
-    // 将slot所在groupId加入到map中
+	// 将slot所在groupId加入到map中
 	s.groups[i] = slotInfo.GroupId
-    // 填充指定slot的信息，建立与所在redis-server的连接
+	// 填充指定slot的信息，建立与所在redis-server的连接
 	s.router.FillSlot(i, addr, from,
 		slotInfo.State.Status == models.SLOT_STATUS_PRE_MIGRATE)
 }
@@ -400,7 +399,7 @@ func (s *Server) responseAction(seq int64) {
 // 根据序号获取解析后的action对象，其实是为了将json解析成 target 对象
 func (s *Server) getActionObject(seq int, target interface{}) {
 	act := &models.Action{Target: target}
-    // 根据序号获取解析后的action对象
+	// 根据序号获取解析后的action对象
 	err := s.topo.GetActionWithSeqObject(int64(seq), act)
 	if err != nil {
 		log.PanicErrorf(err, "get action object failed, seq = %d", seq)
@@ -410,13 +409,13 @@ func (s *Server) getActionObject(seq int, target interface{}) {
 
 // 检查通知内容，有需要就更新slot状态信息
 func (s *Server) checkAndDoTopoChange(seq int) bool {
-    // 根据序号获取通知信息
+	// 根据序号获取通知信息
 	act, err := s.topo.GetActionWithSeq(int64(seq))
 	if err != nil { //todo: error is not "not exist"
 		log.PanicErrorf(err, "action failed, seq = %d", seq)
 	}
 
-    // 检查是否需要自己回复
+	// 检查是否需要自己回复
 	if !needResponse(act.Receivers, s.info) { //no need to response
 		return false
 	}
@@ -424,22 +423,22 @@ func (s *Server) checkAndDoTopoChange(seq int) bool {
 	log.Warnf("action %v receivers %v", seq, act.Receivers)
 
 	switch act.Type {
-    // slot状态变更，重新获取并更新slot信息
+	// slot状态变更，重新获取并更新slot信息
 	case models.ACTION_TYPE_SLOT_MIGRATE, models.ACTION_TYPE_SLOT_CHANGED,
 		models.ACTION_TYPE_SLOT_PREMIGRATE:
 		slot := &models.Slot{}
 		s.getActionObject(seq, slot)
 		s.fillSlot(slot.Id)
-    // group状态变更，将属于此group的slot的状态全部更新
+		// group状态变更，将属于此group的slot的状态全部更新
 	case models.ACTION_TYPE_SERVER_GROUP_CHANGED:
 		serverGroup := &models.ServerGroup{}
 		s.getActionObject(seq, serverGroup)
 		s.onGroupChange(serverGroup.Id)
-    // 因为要remove group必须要将所有slot迁走，所以不需要关心这个
+		// 因为要remove group必须要将所有slot迁走，所以不需要关心这个
 	case models.ACTION_TYPE_SERVER_GROUP_REMOVE:
 	//do not care
 
-    // 批量迁移slot的通知，逐一更新slot的状态信息
+	// 批量迁移slot的通知，逐一更新slot的状态信息
 	case models.ACTION_TYPE_MULTI_SLOT_CHANGED:
 		param := &models.SlotMultiSetParam{}
 		s.getActionObject(seq, param)
@@ -452,14 +451,14 @@ func (s *Server) checkAndDoTopoChange(seq int) bool {
 
 // 处理 zk 上的 watch 节点变更的通知，主要有两种，一种是自身proxy的状态变更，一种是 action 通知消息的更新
 func (s *Server) processAction(e interface{}) {
-    // 如果是单个proxy的变更通知
+	// 如果是单个proxy的变更通知
 	if strings.Index(getEventPath(e), models.GetProxyPath(s.topo.ProductName)) == 0 {
-        // 获取自身的proxy信息
+		// 获取自身的proxy信息
 		info, err := s.topo.GetProxyInfo(s.info.Id)
 		if err != nil {
 			log.PanicErrorf(err, "get proxy info failed: %s", s.info.Id)
 		}
-        // 根据变更后的状态进行相应操作
+		// 根据变更后的状态进行相应操作
 		switch info.State {
 		case models.PROXY_STATE_MARK_OFFLINE:
 			log.Infof("mark offline, proxy got offline event: %s", s.info.Id)
@@ -472,12 +471,12 @@ func (s *Server) processAction(e interface{}) {
 		return
 	}
 
-    // action 目录通知信息
+	// action 目录通知信息
 	// re-watch
-    // 获取当前 actions 目录下所有的节点信息，并且重新监听
+	// 获取当前 actions 目录下所有的节点信息，并且重新监听
 	nodes := s.rewatchNodes()
 
-    // 将字符串序号数组转换成int数组，并且排序
+	// 将字符串序号数组转换成int数组，并且排序
 	seqs, err := models.ExtraSeqList(nodes)
 	if err != nil {
 		log.PanicErrorf(err, "get seq list failed")
@@ -488,7 +487,7 @@ func (s *Server) processAction(e interface{}) {
 	}
 
 	// get last pos
-    // 定位到尚未读取的那一条action的序号
+	// 定位到尚未读取的那一条action的序号
 	index := -1
 	for i, seq := range seqs {
 		if s.lastActionSeq < seq {
@@ -504,7 +503,7 @@ func (s *Server) processAction(e interface{}) {
 
 	actions := seqs[index:]
 	for _, seq := range actions {
-        // 根据 action 里的序号，返回 ActionResponse 里的路径
+		// 根据 action 里的序号，返回 ActionResponse 里的路径
 		exist, err := s.topo.Exist(path.Join(s.topo.GetActionResponsePath(seq), s.info.Id))
 		if err != nil {
 			log.PanicErrorf(err, "get action failed")
@@ -512,14 +511,14 @@ func (s *Server) processAction(e interface{}) {
 		if exist {
 			continue
 		}
-        // 检查通知内容，有需要就更新slot状态信息
+		// 检查通知内容，有需要就更新slot状态信息
 		if s.checkAndDoTopoChange(seq) {
-            // 需要回复的话，就在 ActionResponse 下创建节点完成回复
+			// 需要回复的话，就在 ActionResponse 下创建节点完成回复
 			s.responseAction(int64(seq))
 		}
 	}
 
-    // 更新已经接收到的通知序号
+	// 更新已经接收到的通知序号
 	s.lastActionSeq = seqs[len(seqs)-1]
 }
 
@@ -536,11 +535,11 @@ func (s *Server) loopEvents() {
 	for s.info.State == models.PROXY_STATE_ONLINE {
 		select {
 		case <-s.kill:
-            // proxy停止
+			// proxy停止
 			log.Infof("mark offline, proxy is killed: %s", s.info.Id)
 			s.markOffline()
 		case e := <-s.evtbus:
-            // 检测到zk上有状态变更，进行相应的处理
+			// 检测到zk上有状态变更，进行相应的处理
 			evtPath := getEventPath(e)
 			log.Infof("got event %s, %v, lastActionSeq %d", s.info.Id, e, s.lastActionSeq)
 			if strings.Index(evtPath, models.GetActionResponsePath(s.conf.productName)) == 0 {
@@ -548,17 +547,17 @@ func (s *Server) loopEvents() {
 				if err != nil {
 					log.ErrorErrorf(err, "parse action seq failed")
 				} else {
-                    // 如果是重复的action，忽略
+					// 如果是重复的action，忽略
 					if seq < s.lastActionSeq {
 						log.Infof("ignore seq = %d", seq)
 						continue
 					}
 				}
 			}
-            // 处理 zk 上的 watch 节点变更的通知，主要有两种，一种是自身proxy的状态变更，一种是 action 通知消息的更新
+			// 处理 zk 上的 watch 节点变更的通知，主要有两种，一种是自身proxy的状态变更，一种是 action 通知消息的更新
 			s.processAction(e)
 		case <-ticker.C:
-            // 每隔5秒钟向后端 redis-server 发送心跳包
+			// 每隔5秒钟向后端 redis-server 发送心跳包
 			if maxTick := s.conf.pingPeriod; maxTick != 0 {
 				if tick++; tick >= maxTick {
 					s.router.KeepAlive()

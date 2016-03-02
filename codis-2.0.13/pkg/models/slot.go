@@ -100,13 +100,13 @@ func GetSlot(zkConn zkhelper.Conn, productName string, id int) (*Slot, error) {
 // 获取状态处于 SLOT_STATUS_MIGRATE 和 SLOT_STATUS_PRE_MIGRATE 的节点信息
 func GetMigratingSlots(conn zkhelper.Conn, productName string) ([]*Slot, error) {
 	migrateSlots := make([]*Slot, 0)
-    // 取到所有slots的状态
+	// 取到所有slots的状态
 	slots, err := Slots(conn, productName)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-    // 将状态为 SLOT_STATUS_MIGRATE 和 SLOT_STATUS_PRE_MIGRATE 的slot返回
+	// 将状态为 SLOT_STATUS_MIGRATE 和 SLOT_STATUS_PRE_MIGRATE 的slot返回
 	for _, slot := range slots {
 		if slot.State.Status == SLOT_STATUS_MIGRATE || slot.State.Status == SLOT_STATUS_PRE_MIGRATE {
 			migrateSlots = append(migrateSlots, slot)
@@ -118,7 +118,7 @@ func GetMigratingSlots(conn zkhelper.Conn, productName string) ([]*Slot, error) 
 // 返回zk中存储的所有的slots的信息学
 func Slots(zkConn zkhelper.Conn, productName string) ([]*Slot, error) {
 	zkPath := GetSlotBasePath(productName)
-    // 查找所有slots节点
+	// 查找所有slots节点
 	children, _, err := zkConn.Children(zkPath)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -158,7 +158,7 @@ func SetSlotRange(zkConn zkhelper.Conn, productName string, fromSlot, toSlot, gr
 		if err != nil {
 			return errors.Trace(err)
 		}
-        // 如果状态不为 offline，则不能执行初始化分配的操作，应该使用迁移操作
+		// 如果状态不为 offline，则不能执行初始化分配的操作，应该使用迁移操作
 		if s.State.Status != SLOT_STATUS_OFFLINE {
 			return errors.New(fmt.Sprintf("slot %d is not offline, if you want to change the group for a slot, use migrate", s.Id))
 		}
@@ -182,7 +182,7 @@ func SetSlotRange(zkConn zkhelper.Conn, productName string, fromSlot, toSlot, gr
 		GroupId: groupId,
 		Status:  status,
 	}
-    // 通知proxies slot状态变更
+	// 通知proxies slot状态变更
 	err = NewAction(zkConn, productName, ACTION_TYPE_MULTI_SLOT_CHANGED, param, "", true)
 	return errors.Trace(err)
 }
@@ -240,13 +240,13 @@ func (s *Slot) Update(zkConn zkhelper.Conn) error {
 		return errors.Trace(err)
 	}
 	zkPath := GetSlotPath(s.ProductName, s.Id)
-    // 存在就更新，不存在就创建
+	// 存在就更新，不存在就创建
 	_, err = zkhelper.CreateOrUpdate(zkConn, zkPath, string(data), 0, zkhelper.DefaultFileACLs(), true)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-    // 通知proxies slot信息变更，并等待回复
+	// 通知proxies slot信息变更，并等待回复
 	switch s.State.Status {
 	case SLOT_STATUS_MIGRATE:
 		{

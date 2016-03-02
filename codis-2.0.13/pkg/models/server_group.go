@@ -16,7 +16,7 @@ import (
 )
 
 // redis-server的状态类型
-// 
+//
 const (
 	SERVER_TYPE_MASTER  string = "master"
 	SERVER_TYPE_SLAVE   string = "slave"
@@ -25,16 +25,16 @@ const (
 
 // redis server instance
 type Server struct {
-	Type    string `json:"type"`        // 类型， master,slave,offline
-	GroupId int    `json:"group_id"`    // 所属group_id
-	Addr    string `json:"addr"`        // 地址
+	Type    string `json:"type"`     // 类型， master,slave,offline
+	GroupId int    `json:"group_id"` // 所属group_id
+	Addr    string `json:"addr"`     // 地址
 }
 
 // redis server group
 type ServerGroup struct {
-	Id          int       `json:"id"`               // group_id
-	ProductName string    `json:"product_name"`     // 集群名称
-	Servers     []*Server `json:"servers"`          // 包含的所有redis-server信息
+	Id          int       `json:"id"`           // group_id
+	ProductName string    `json:"product_name"` // 集群名称
+	Servers     []*Server `json:"servers"`      // 包含的所有redis-server信息
 }
 
 func (self *Server) String() string {
@@ -152,7 +152,7 @@ func (self *ServerGroup) Master(zkConn zkhelper.Conn) (*Server, error) {
 // 删除group信息（要确定没有slot存储在这个group中）
 func (self *ServerGroup) Remove(zkConn zkhelper.Conn) error {
 	// check if this group is not used by any slot
-    // 获取所有的slots信息，检查是否有slot在要删除的group中，如果有，不能删除
+	// 获取所有的slots信息，检查是否有slot在要删除的group中，如果有，不能删除
 	slots, err := Slots(zkConn, self.ProductName)
 	if err != nil {
 		return errors.Trace(err)
@@ -190,7 +190,7 @@ func (self *ServerGroup) RemoveServer(zkConn zkhelper.Conn, addr string) error {
 		return errors.Trace(err)
 	}
 	log.Info(s)
-    // 不能删除master节点的redis-server
+	// 不能删除master节点的redis-server
 	if s.Type == SERVER_TYPE_MASTER {
 		return errors.Errorf("cannot remove master, use promote first")
 	}
@@ -209,7 +209,7 @@ func (self *ServerGroup) RemoveServer(zkConn zkhelper.Conn, addr string) error {
 	}
 
 	// remove slave won't need proxy confirm
-    // 删除slave节点对一致性没有影响，不需要等待proxy回复
+	// 删除slave节点对一致性没有影响，不需要等待proxy回复
 	err = NewAction(zkConn, self.ProductName, ACTION_TYPE_SERVER_GROUP_CHANGED, self, "", false)
 	return errors.Trace(err)
 }
@@ -219,7 +219,7 @@ func (self *ServerGroup) RemoveServer(zkConn zkhelper.Conn, addr string) error {
 func (self *ServerGroup) Promote(conn zkhelper.Conn, addr, passwd string) error {
 	var s *Server
 	exists := false
-    // 检查要提升为master的server是否存在
+	// 检查要提升为master的server是否存在
 	for i := 0; i < len(self.Servers); i++ {
 		if self.Servers[i].Addr == addr {
 			s = self.Servers[i]
@@ -232,13 +232,13 @@ func (self *ServerGroup) Promote(conn zkhelper.Conn, addr, passwd string) error 
 		return errors.Errorf("no such addr %s", addr)
 	}
 
-    // 先取消此机器的 slave
+	// 先取消此机器的 slave
 	err := utils.SlaveNoOne(s.Addr, passwd)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-    // 先将原先的master的机器置为 offline
+	// 先将原先的master的机器置为 offline
 	// set origin master offline
 	master, err := self.Master(conn)
 	if err != nil {
@@ -255,7 +255,7 @@ func (self *ServerGroup) Promote(conn zkhelper.Conn, addr, passwd string) error 
 	}
 
 	// promote new server to master
-    // 将新的server提升为master
+	// 将新的server提升为master
 	s.Type = SERVER_TYPE_MASTER
 	err = self.AddServer(conn, s, passwd)
 	return errors.Trace(err)
@@ -267,12 +267,12 @@ func (self *ServerGroup) Create(zkConn zkhelper.Conn) error {
 		return errors.Errorf("invalid server group id %d", self.Id)
 	}
 	zkPath := fmt.Sprintf("/zk/codis/db_%s/servers/group_%d", self.ProductName, self.Id)
-    // 创建这个group的节点
+	// 创建这个group的节点
 	_, err := zkhelper.CreateOrUpdate(zkConn, zkPath, "", 0, zkhelper.DefaultDirACLs(), true)
 	if err != nil {
 		return errors.Trace(err)
 	}
-    // 创建一个通知
+	// 创建一个通知
 	err = NewAction(zkConn, self.ProductName, ACTION_TYPE_SERVER_GROUP_CHANGED, self, "", false)
 	if err != nil {
 		return errors.Trace(err)
@@ -297,7 +297,7 @@ var ErrNodeExists = errors.New("node already exists")
 func (self *ServerGroup) AddServer(zkConn zkhelper.Conn, s *Server, passwd string) error {
 	s.GroupId = self.Id
 
-    // 获取此group中已经存在的redis-server的信息
+	// 获取此group中已经存在的redis-server的信息
 	servers, err := self.GetServers(zkConn)
 	if err != nil {
 		return errors.Trace(err)
@@ -315,7 +315,7 @@ func (self *ServerGroup) AddServer(zkConn zkhelper.Conn, s *Server, passwd strin
 	}
 
 	// if this group has no server. auto promote this server to master
-    // 如果添加的这个server是这个group中的第一台，默认为master节点
+	// 如果添加的这个server是这个group中的第一台，默认为master节点
 	if len(servers) == 0 {
 		s.Type = SERVER_TYPE_MASTER
 	}
@@ -325,7 +325,7 @@ func (self *ServerGroup) AddServer(zkConn zkhelper.Conn, s *Server, passwd strin
 		return errors.Trace(err)
 	}
 
-    // 在group节点下面创建server节点
+	// 在group节点下面创建server节点
 	zkPath := fmt.Sprintf("/zk/codis/db_%s/servers/group_%d/%s", self.ProductName, self.Id, s.Addr)
 	_, err = zkhelper.CreateOrUpdate(zkConn, zkPath, string(val), 0, zkhelper.DefaultFileACLs(), true)
 	if err != nil {
@@ -339,7 +339,7 @@ func (self *ServerGroup) AddServer(zkConn zkhelper.Conn, s *Server, passwd strin
 	}
 	self.Servers = servers
 
-    // 如果添加的是master节点，要通知所有proxies有节点变更，并且等待全部回复
+	// 如果添加的是master节点，要通知所有proxies有节点变更，并且等待全部回复
 	if s.Type == SERVER_TYPE_MASTER {
 		err = NewAction(zkConn, self.ProductName, ACTION_TYPE_SERVER_GROUP_CHANGED, self, "", true)
 		if err != nil {
@@ -347,7 +347,7 @@ func (self *ServerGroup) AddServer(zkConn zkhelper.Conn, s *Server, passwd strin
 		}
 	} else if s.Type == SERVER_TYPE_SLAVE && len(masterAddr) > 0 {
 		// send command slaveof to slave
-        // 使这个server成为此group中master的slave
+		// 使这个server成为此group中master的slave
 		err := utils.SlaveOf(s.Addr, passwd, masterAddr)
 		if err != nil {
 			return errors.Trace(err)

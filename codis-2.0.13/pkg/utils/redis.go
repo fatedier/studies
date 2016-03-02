@@ -56,7 +56,7 @@ func SlotsInfo(addr, passwd string, fromSlot, toSlot int) (map[int]int, error) {
 			if _, err := redis.Scan(info, &slotid, &slotsize); err != nil {
 				return nil, errors.Trace(err)
 			} else {
-				slots[slotid] = slotsize    // 属于此slotId的key的数量
+				slots[slotid] = slotsize // 属于此slotId的key的数量
 			}
 		}
 	}
@@ -75,7 +75,7 @@ func SlotsMgrtTagSlot(c redis.Conn, slotId int, toAddr string) (int, int, error)
 		return -1, -1, errors.Trace(ErrInvalidAddr)
 	}
 
-    // 执行redis命令 SLOTSMGRTTAGSLOT
+	// 执行redis命令 SLOTSMGRTTAGSLOT
 	reply, err := redis.Values(c.Do("SLOTSMGRTTAGSLOT", addrParts[0], addrParts[1], 30000, slotId))
 	if err != nil {
 		return -1, -1, errors.Trace(err)

@@ -52,7 +52,7 @@ func NewMigrateManager(zkConn zkhelper.Conn, pn string) *MigrateManager {
 	}
 	zkhelper.CreateRecursive(m.zkConn, getMigrateTasksPath(m.productName), "", 0, zkhelper.DefaultDirACLs())
 	m.mayRecover()
-    // 开始循环检查此路径下的任务，并执行迁移任务，通过向redis发送命令，迁移slot
+	// 开始循环检查此路径下的任务，并执行迁移任务，通过向redis发送命令，迁移slot
 	go m.loop()
 	return m
 }
@@ -68,7 +68,7 @@ func (m *MigrateManager) mayRecover() error {
 func (m *MigrateManager) PostTask(info *MigrateTaskInfo) {
 	b, _ := json.Marshal(info)
 	p, _ := safeZkConn.Create(getMigrateTasksPath(m.productName)+"/", b, zk.FlagSequence, zkhelper.DefaultFileACLs())
-    // zk节点名即为任务id
+	// zk节点名即为任务id
 	_, info.Id = path.Split(p)
 }
 
@@ -81,14 +81,14 @@ func (m *MigrateManager) loop() error {
 			continue
 		}
 
-        // 构造 MigrateTask 对象
+		// 构造 MigrateTask 对象
 		t := GetMigrateTask(*info)
-        // 集群中每次只能有一个slot处于迁移状态，这里做一下检查，看迁移任务和slots下的对应slot的状态是否一致
+		// 集群中每次只能有一个slot处于迁移状态，这里做一下检查，看迁移任务和slots下的对应slot的状态是否一致
 		err := t.preMigrateCheck()
 		if err != nil {
 			log.ErrorErrorf(err, "pre migrate check failed")
 		}
-        // 执行迁移任务，每个任务迁移一个slot
+		// 执行迁移任务，每个任务迁移一个slot
 		err = t.run()
 		if err != nil {
 			log.ErrorErrorf(err, "migrate failed")
@@ -108,12 +108,12 @@ func (m *MigrateManager) NextTask() *MigrateTaskInfo {
 // 从zk里获取所有的迁移任务并返回
 func (m *MigrateManager) Tasks() []MigrateTaskInfo {
 	res := Tasks{}
-    // 获取 /zk/codis/productName/migrate_tasks 下的所有节点，每个节点代表一个任务
-    log.Debugf("Start get migrateTasks from zk...")
+	// 获取 /zk/codis/productName/migrate_tasks 下的所有节点，每个节点代表一个任务
+	log.Debugf("Start get migrateTasks from zk...")
 	tasks, _, _ := safeZkConn.Children(getMigrateTasksPath(m.productName))
-    log.Debugf("End get migrateTasks from zk")
+	log.Debugf("End get migrateTasks from zk")
 	for _, id := range tasks {
-        // 获取每一个迁移任务的详细信息
+		// 获取每一个迁移任务的详细信息
 		data, _, _ := safeZkConn.Get(getMigrateTasksPath(m.productName) + "/" + id)
 		info := new(MigrateTaskInfo)
 		json.Unmarshal(data, info)

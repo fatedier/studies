@@ -26,12 +26,12 @@ type ZkFactory func(zkAddr string, zkSessionTimeout int) (zkhelper.Conn, error)
 
 // 集群拓扑信息管理对象，封装了一些获取集群信息的操作
 type Topology struct {
-	ProductName      string         // 集群项目名称
-	zkAddr           string         // zk地址
-	zkConn           zkhelper.Conn  // zk连接
-	fact             ZkFactory      // 通过此函数返回一个zk连接（考虑到兼容etcd）
-	provider         string         // zk or etcd
-	zkSessionTimeout int            // zk会话超时时间
+	ProductName      string        // 集群项目名称
+	zkAddr           string        // zk地址
+	zkConn           zkhelper.Conn // zk连接
+	fact             ZkFactory     // 通过此函数返回一个zk连接（考虑到兼容etcd）
+	provider         string        // zk or etcd
+	zkSessionTimeout int           // zk会话超时时间
 }
 
 func (top *Topology) GetGroup(groupId int) (*models.ServerGroup, error) {
@@ -128,7 +128,7 @@ func (top *Topology) SetProxyStatus(proxyName string, status string) error {
 // 关闭topology对象，删除zk上的相关节点
 func (top *Topology) Close(proxyName string) {
 	// delete fence znode
-    // 删除fence节点上该proxy的信息
+	// 删除fence节点上该proxy的信息
 	pi, err := models.GetProxyInfo(top.zkConn, top.ProductName, proxyName)
 	if err != nil {
 		log.Errorf("killing fence error, proxy %s is not exists", proxyName)
@@ -136,7 +136,7 @@ func (top *Topology) Close(proxyName string) {
 		zkhelper.DeleteRecursive(top.zkConn, path.Join(models.GetProxyFencePath(top.ProductName), pi.Addr), -1)
 	}
 	// delete ephemeral znode
-    // 删除 proxy 节点上的该proxy的信息
+	// 删除 proxy 节点上的该proxy的信息
 	zkhelper.DeleteRecursive(top.zkConn, path.Join(models.GetProxyPath(top.ProductName), proxyName), -1)
 	top.zkConn.Close()
 }

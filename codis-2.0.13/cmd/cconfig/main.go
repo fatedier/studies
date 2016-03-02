@@ -16,16 +16,16 @@ import (
 	"github.com/c4pt0r/cfg"
 	"github.com/docopt/docopt-go"
 
+	"github.com/CodisLabs/codis/pkg/utils"
 	"github.com/CodisLabs/codis/pkg/utils/errors"
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/CodisLabs/codis/pkg/utils"
 )
 
 // global objects
 var (
-	globalEnv            Env        // 全局的环境变量
+	globalEnv            Env // 全局的环境变量
 	livingNode           string
-	createdDashboardNode bool       // 是否在zk上成功创建dashboard节点
+	createdDashboardNode bool // 是否在zk上成功创建dashboard节点
 )
 
 type Command struct {
@@ -95,20 +95,20 @@ func runCommand(cmd string, args []string) (err error) {
 }
 
 func main() {
-    // 设置程序中断时的回调函数
+	// 设置程序中断时的回调函数
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)      // ctrl-c
-	signal.Notify(c, syscall.SIGTERM)   // kill 15
+	signal.Notify(c, os.Interrupt)    // ctrl-c
+	signal.Notify(c, syscall.SIGTERM) // kill 15
 	go func() {
 		<-c
-        // 如果是作为dashboard启动，会去zk中删除dashboard节点
+		// 如果是作为dashboard启动，会去zk中删除dashboard节点
 		if createdDashboardNode {
 			releaseDashboardNode()
 		}
 		log.Panicf("ctrl-c or SIGTERM found, exit")
 	}()
 
-    // 解析命令行参数
+	// 解析命令行参数
 	args, err := docopt.Parse(usage, nil, true, utils.Version, true)
 	if err != nil {
 		fmt.Println(err)
@@ -149,13 +149,13 @@ func main() {
 	// load global vars
 	globalEnv = LoadCodisEnv(config)
 
-	cmd := args["<command>"].(string)       // 启动命令
-	cmdArgs := args["<args>"].([]string)    // 针对启动命令的参数
+	cmd := args["<command>"].(string)    // 启动命令
+	cmdArgs := args["<args>"].([]string) // 针对启动命令的参数
 
-    // 监听10086端口
+	// 监听10086端口
 	go http.ListenAndServe(":10086", nil)
 
-    // 根据command执行不同的操作
+	// 根据command执行不同的操作
 	err = runCommand(cmd, cmdArgs)
 	if err != nil {
 		log.PanicErrorf(err, "run sub-command failed")

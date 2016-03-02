@@ -71,7 +71,7 @@ func apiOverview() (int, string) {
 
 	redisInfos := make([]map[string]string, 0)
 
-    // 获取每一个group中的master redis-server的info信息
+	// 获取每一个group中的master redis-server的info信息
 	if len(instances) > 0 {
 		for _, instance := range instances {
 			info, err := utils.GetRedisStat(instance, globalEnv.Password())
@@ -102,7 +102,7 @@ func apiGetServerGroupList() (int, string) {
 func apiInitSlots(r *http.Request) (int, string) {
 	r.ParseForm()
 	isForce := false
-    // 如果 is_force 参数为true，则即使slot已经存在，也强制初始化slot
+	// 如果 is_force 参数为true，则即使slot已经存在，也强制初始化slot
 	val := r.FormValue("is_force")
 	if len(val) > 0 && (val == "1" || val == "true") {
 		isForce = true
@@ -142,7 +142,7 @@ type migrateTaskForm struct {
 
 // 执行迁移slot的任务，依次迁移，每次迁移一个slot
 func apiDoMigrate(form migrateTaskForm) (int, string) {
-    // 将N多个slot的迁移工作拆分成一个slot一个迁移任务
+	// 将N多个slot的迁移工作拆分成一个slot一个迁移任务
 	for i := form.From; i <= form.To; i++ {
 		task := MigrateTaskInfo{
 			SlotId:     i,
@@ -151,7 +151,7 @@ func apiDoMigrate(form migrateTaskForm) (int, string) {
 			Status:     MIGRATE_TASK_PENDING,
 			CreateAt:   strconv.FormatInt(time.Now().Unix(), 10),
 		}
-        // 在zk的 migrate_task 节点下创建顺序节点建立迁移任务
+		// 在zk的 migrate_task 节点下创建顺序节点建立迁移任务
 		globalMigrateManager.PostTask(&task)
 	}
 	// do migrate async
@@ -196,7 +196,7 @@ func apiGetServerGroup(param martini.Params) (int, string) {
 
 // 获取集群当前的迁移信息，每次只能有一个slot处于迁移状态
 func apiMigrateStatus() (int, string) {
-    // 获取状态处于 SLOT_STATUS_MIGRATE 和 SLOT_STATUS_PRE_MIGRATE 的节点信息
+	// 获取状态处于 SLOT_STATUS_MIGRATE 和 SLOT_STATUS_PRE_MIGRATE 的节点信息
 	migrateSlots, err := models.GetMigratingSlots(safeZkConn, globalEnv.ProductName())
 	if err != nil && !zkhelper.ZkErrorEqual(err, zk.ErrNoNode) {
 		return 500, err.Error()
@@ -217,7 +217,7 @@ func apiGetRedisSlotInfo(param martini.Params) (int, string) {
 		log.ErrorErrorf(err, "parse slotid failed")
 		return 500, err.Error()
 	}
-    // 向某一台redis-sever请求，获取从 fromSlot 到 toSlot 之间的分别属于这些slotId的key的数量
+	// 向某一台redis-sever请求，获取从 fromSlot 到 toSlot 之间的分别属于这些slotId的key的数量
 	slotInfo, err := utils.SlotsInfo(addr, globalEnv.Password(), slotId, slotId)
 	if err != nil {
 		log.ErrorErrorf(err, "get slot info %d failed", slotId)
@@ -242,13 +242,13 @@ func apiGetRedisSlotInfoFromGroupId(param martini.Params) (int, string) {
 		log.ErrorErrorf(err, "parse slotid failed")
 		return 500, err.Error()
 	}
-    // 获取group信息
+	// 获取group信息
 	g, err := models.GetGroup(safeZkConn, globalEnv.ProductName(), groupId)
 	if err != nil {
 		log.ErrorErrorf(err, "get group %d failed", groupId)
 		return 500, err.Error()
 	}
-    // 取到redis-server master的地址
+	// 取到redis-server master的地址
 	s, err := g.Master(safeZkConn)
 	if err != nil {
 		log.ErrorErrorf(err, "get master of group %d failed", groupId)
@@ -302,7 +302,7 @@ func apiRemoveServerGroup(param martini.Params) (int, string) {
 // create new server group
 // 创建新的group节点信息
 func apiAddServerGroup(newGroup models.ServerGroup) (int, string) {
-    // 获取zk锁
+	// 获取zk锁
 	lock := utils.GetZkLock(safeZkConn, globalEnv.ProductName())
 	if err := lock.LockWithTimeout(0, fmt.Sprintf("add group %+v", newGroup)); err != nil {
 		return 500, err.Error()
@@ -317,7 +317,7 @@ func apiAddServerGroup(newGroup models.ServerGroup) (int, string) {
 
 	newGroup.ProductName = globalEnv.ProductName()
 
-    // 如果已经存在，忽略
+	// 如果已经存在，忽略
 	exists, err := newGroup.Exists(safeZkConn)
 	if err != nil {
 		log.ErrorErrorf(err, "check group exits failed")
@@ -326,7 +326,7 @@ func apiAddServerGroup(newGroup models.ServerGroup) (int, string) {
 	if exists {
 		return 500, "group already exists"
 	}
-    // 在zk上创建该group的节点信息
+	// 在zk上创建该group的节点信息
 	err = newGroup.Create(safeZkConn)
 	if err != nil {
 		log.ErrorErrorf(err, "create node for new group failed")
@@ -359,14 +359,14 @@ func apiAddServerToGroup(server models.Server, param martini.Params) (int, strin
 	}
 
 	// create new group if not exists
-    // 如果不存在的话，在zk上创建一个新的group，之后再把server信息添加进去
+	// 如果不存在的话，在zk上创建一个新的group，之后再把server信息添加进去
 	if !exists {
 		if err := serverGroup.Create(safeZkConn); err != nil {
 			return 500, err.Error()
 		}
 	}
 
-    // 将redis-server信息添加到group中
+	// 将redis-server信息添加到group中
 	if err := serverGroup.AddServer(safeZkConn, &server, globalEnv.Password()); err != nil {
 		log.ErrorErrorf(err, "add server to group failed")
 		return 500, err.Error()
@@ -389,13 +389,13 @@ func apiPromoteServer(server models.Server, param martini.Params) (int, string) 
 		}
 	}()
 
-    // 获取group信息
+	// 获取group信息
 	group, err := models.GetGroup(safeZkConn, globalEnv.ProductName(), server.GroupId)
 	if err != nil {
 		log.ErrorErrorf(err, "get group %d failed", server.GroupId)
 		return 500, err.Error()
 	}
-    // 将指定的redis-server提升为master
+	// 将指定的redis-server提升为master
 	err = group.Promote(safeZkConn, server.Addr, globalEnv.Password())
 	if err != nil {
 		log.ErrorErrorf(err, "promote group %d failed", server.GroupId)
@@ -444,7 +444,7 @@ func apiSetProxyStatus(proxy models.ProxyInfo, param martini.Params) (int, strin
 
 // 获取所有proxy的状态信息
 func apiGetProxyList(param martini.Params) (int, string) {
-    // 最后nil表示获取全部，不指定过滤函数
+	// 最后nil表示获取全部，不指定过滤函数
 	proxies, err := models.ProxyList(safeZkConn, globalEnv.ProductName(), nil)
 	if err != nil {
 		log.ErrorErrorf(err, "get proxy list failed")
@@ -500,7 +500,7 @@ func apiSlotRangeSet(task RangeSetTask) (int, string) {
 		task.Status = string(models.SLOT_STATUS_ONLINE)
 	}
 
-    // 用于初始化时分配slots到指定group
+	// 用于初始化时分配slots到指定group
 	err := models.SetSlotRange(safeZkConn, globalEnv.ProductName(), task.FromSlot, task.ToSlot, task.NewGroupId, models.SlotStatus(task.Status))
 	if err != nil {
 		log.ErrorErrorf(err, "set slot range [%d,%d] failed", task.FromSlot, task.ToSlot)
@@ -528,7 +528,7 @@ func apiActionGC(r *http.Request) (int, string) {
 	}()
 
 	var err error
-    // 按照保留个数删除，以及按照超过多长时间后删除两种方式
+	// 按照保留个数删除，以及按照超过多长时间后删除两种方式
 	if keep >= 0 {
 		err = models.ActionGC(safeZkConn, globalEnv.ProductName(), models.GC_TYPE_N, keep)
 	} else if secs > 0 {

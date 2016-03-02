@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/wandoulabs/go-zookeeper/zk"
 	"github.com/wandoulabs/zkhelper"
-	"github.com/CodisLabs/codis/pkg/utils/log"
 )
 
 const retryMaxOnOps = 10
@@ -17,7 +17,7 @@ const retryMaxOnOps = 10
 type ConnBuilder interface {
 	// Get a conn that will retry automatically when getting error caused by connection issues.
 	// If retry can not rebuild the connection, there will be a fetal error
-    // 出错后会自动重试，如果重连上限次数，程序会挂掉
+	// 出错后会自动重试，如果重连上限次数，程序会挂掉
 	GetSafeConn() zkhelper.Conn
 
 	// Get a conn that will return error caused by connection issues
@@ -27,12 +27,12 @@ type ConnBuilder interface {
 
 // zk连接相关
 type connBuilder struct {
-	connection         zkhelper.Conn                    // 和zk之间的连接
-	builder            func() (zkhelper.Conn, error)    // 建立zk连接的函数
-	createdOn          time.Time                        // 最近一次zk连接建立时间
+	connection         zkhelper.Conn                 // 和zk之间的连接
+	builder            func() (zkhelper.Conn, error) // 建立zk连接的函数
+	createdOn          time.Time                     // 最近一次zk连接建立时间
 	lock               sync.RWMutex
-	safeConnInstance   *safeConn                        // 安全连接，出错后会自动重试，如果超过重连上限次数，程序会挂掉
-	unsafeConnInstance *unsafeConn                      // 非安全连接
+	safeConnInstance   *safeConn   // 安全连接，出错后会自动重试，如果超过重连上限次数，程序会挂掉
+	unsafeConnInstance *unsafeConn // 非安全连接
 }
 
 // 初始化zk连接相关
@@ -53,7 +53,7 @@ func (b *connBuilder) resetConnection() {
 	if b.builder == nil {
 		log.Panicf("no connection builder")
 	}
-    // 避免短时间内重复重建连接，间隔时间为1s
+	// 避免短时间内重复重建连接，间隔时间为1s
 	if time.Now().Before(b.createdOn.Add(time.Second)) {
 		return
 	}

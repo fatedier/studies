@@ -15,11 +15,11 @@ import (
 
 // 和后端redis的连接
 type BackendConn struct {
-	addr string             // 连接redis的地址
-	auth string             // 连接redis的密码
+	addr string // 连接redis的地址
+	auth string // 连接redis的密码
 	stop sync.Once
 
-	input chan *Request     // 用于接收redis请求的通道
+	input chan *Request // 用于接收redis请求的通道
 }
 
 // 建立和后端redis-server的连接，等待请求
@@ -36,18 +36,18 @@ func NewBackendConn(addr, auth string) *BackendConn {
 func (bc *BackendConn) Run() {
 	log.Infof("backend conn [%p] to %s, start service", bc, bc.addr)
 	for k := 0; ; k++ {
-        // 循环等待新的 redis 请求，发往后端 redis-server，并异步地等待redis返回内容后填充 request 的resp字段
+		// 循环等待新的 redis 请求，发往后端 redis-server，并异步地等待redis返回内容后填充 request 的resp字段
 		err := bc.loopWriter()
 		if err == nil {
 			break
 		} else {
-            // 由于后端redis的连接出现错误，对等待中的剩余的请求全部返回错误信息
+			// 由于后端redis的连接出现错误，对等待中的剩余的请求全部返回错误信息
 			for i := len(bc.input); i != 0; i-- {
 				r := <-bc.input
 				bc.setResponse(r, nil, err)
 			}
 		}
-        // 休眠 50ms 后重连
+		// 休眠 50ms 后重连
 		log.WarnErrorf(err, "backend conn [%p] to %s, restart [%d]", bc, bc.addr, k)
 		time.Sleep(time.Millisecond * 50)
 	}
@@ -75,7 +75,7 @@ func (bc *BackendConn) PushBack(r *Request) {
 
 // 向redis发送心跳包
 func (bc *BackendConn) KeepAlive() bool {
-    // 如果当前有redis请求，则没必要发心跳包
+	// 如果当前有redis请求，则没必要发心跳包
 	if len(bc.input) != 0 {
 		return false
 	}
@@ -97,30 +97,30 @@ var ErrFailedRequest = errors.New("discard failed request")
 
 // 循环等待新的 redis 请求，发往后端 redis-server，并异步地等待redis返回内容后填充 request 的resp字段
 func (bc *BackendConn) loopWriter() error {
-    // 如果连接close，ok会返回false
+	// 如果连接close，ok会返回false
 	r, ok := <-bc.input
 	if ok {
-        // 创建一个循环处理从redis返回内容的协程，向request中设置返回的信息
+		// 创建一个循环处理从redis返回内容的协程，向request中设置返回的信息
 		c, tasks, err := bc.newBackendReader()
 		if err != nil {
 			return bc.setResponse(r, nil, err)
 		}
 		defer close(tasks)
 
-        // 设置缓存刷新策略
+		// 设置缓存刷新策略
 		p := &FlushPolicy{
 			Encoder:     c.Writer,
 			MaxBuffered: 64,
 			MaxInterval: 300,
 		}
 		for ok {
-            // 如果后续没有等待中的请求了，强制刷新缓冲区
+			// 如果后续没有等待中的请求了，强制刷新缓冲区
 			var flush = len(bc.input) == 0
 			if bc.canForward(r) {
 				if err := p.Encode(r.Resp, flush); err != nil {
 					return bc.setResponse(r, nil, err)
 				}
-                // 发到tasks通道的请求，会有另一个协程循环读取redis的返回，解析后放入request中
+				// 发到tasks通道的请求，会有另一个协程循环读取redis的返回，解析后放入request中
 				tasks <- r
 			} else {
 				if err := p.Flush(flush); err != nil {
@@ -137,12 +137,12 @@ func (bc *BackendConn) loopWriter() error {
 
 // 创建一个循环处理从redis返回内容的协程，向request中设置返回的信息
 func (bc *BackendConn) newBackendReader() (*redis.Conn, chan<- *Request, error) {
-    // 建立和redis的连接
+	// 建立和redis的连接
 	c, err := redis.DialTimeout(bc.addr, 1024*512, time.Second)
 	if err != nil {
 		return nil, nil, err
 	}
-    // redis超时时间
+	// redis超时时间
 	c.ReaderTimeout = time.Minute
 	c.WriterTimeout = time.Minute
 
@@ -155,9 +155,9 @@ func (bc *BackendConn) newBackendReader() (*redis.Conn, chan<- *Request, error) 
 	go func() {
 		defer c.Close()
 		for r := range tasks {
-            // 向redis发送命令
+			// 向redis发送命令
 			resp, err := c.Reader.Decode()
-            // 设置redis返回的状态和信息，因为redis是单线程的，命令都是顺序执行，所以这里的 request 和 response 可以一一对应上
+			// 设置redis返回的状态和信息，因为redis是单线程的，命令都是顺序执行，所以这里的 request 和 response 可以一一对应上
 			bc.setResponse(r, resp, err)
 			if err != nil {
 				// close tcp to tell writer we are failed and should quit
@@ -259,7 +259,7 @@ func (s *SharedBackendConn) IncrRefcnt() {
 
 // 刷新策略
 type FlushPolicy struct {
-	*redis.Encoder      // 相当于 writer
+	*redis.Encoder // 相当于 writer
 
 	MaxBuffered int
 	MaxInterval int64
@@ -270,7 +270,7 @@ type FlushPolicy struct {
 
 // 返回是否需要刷新缓存
 func (p *FlushPolicy) needFlush() bool {
-    // 超过最大缓存区大小，或者超过指定时间间隔，需要再次刷新
+	// 超过最大缓存区大小，或者超过指定时间间隔，需要再次刷新
 	if p.nbuffered != 0 {
 		if p.nbuffered > p.MaxBuffered {
 			return true

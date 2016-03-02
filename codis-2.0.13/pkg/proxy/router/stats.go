@@ -12,9 +12,9 @@ import (
 
 // 操作统计信息
 type OpStats struct {
-	opstr string            // 操作命令
-	calls atomic2.Int64     // 请求次数
-	usecs atomic2.Int64     // 总耗时
+	opstr string        // 操作命令
+	calls atomic2.Int64 // 请求次数
+	usecs atomic2.Int64 // 总耗时
 }
 
 func (s *OpStats) OpStr() string {
@@ -97,7 +97,7 @@ func GetAllOpStats() []*OpStats {
 // 更新指定命令的统计信息
 func incrOpStats(opstr string, usecs int64) {
 	s := GetOpStats(opstr, true)
-    // 调用次数
+	// 调用次数
 	s.calls.Incr()
 	s.usecs.Add(usecs)
 	cmdstats.requests.Incr()
